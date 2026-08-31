@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/components/session-provider";
@@ -18,6 +19,7 @@ const links = [
 export function NavBar() {
   const { user, refresh } = useSession();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   if (!user) return null;
 
@@ -29,11 +31,16 @@ export function NavBar() {
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--card)]">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-        <Link href="/dashboard" className="text-lg font-bold text-[var(--accent)]">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <Link
+          href="/dashboard"
+          className="text-lg font-bold text-[var(--accent)]"
+          onClick={() => setOpen(false)}
+        >
           ⛳ Greeni
         </Link>
-        <nav className="flex flex-1 flex-wrap gap-1 text-sm">
+
+        <nav className="hidden flex-1 flex-wrap gap-1 text-sm sm:flex">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -44,7 +51,7 @@ export function NavBar() {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="hidden items-center gap-3 text-sm sm:flex">
           <Link href="/profile" className="font-medium hover:underline">
             {user.displayName}
           </Link>
@@ -52,7 +59,39 @@ export function NavBar() {
             Log out
           </button>
         </div>
+
+        <button
+          className="btn-secondary text-sm sm:hidden"
+          onClick={() => setOpen((o) => !o)}
+          aria-label="Toggle menu"
+          aria-expanded={open}
+        >
+          {open ? "Close" : "Menu"}
+        </button>
       </div>
+
+      {open && (
+        <nav className="flex flex-col gap-1 border-t border-[var(--border)] px-4 py-3 text-sm sm:hidden">
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+              onClick={() => setOpen(false)}
+            >
+              {l.label}
+            </Link>
+          ))}
+          <div className="mt-2 flex items-center justify-between border-t border-[var(--border)] pt-3">
+            <Link href="/profile" className="font-medium hover:underline" onClick={() => setOpen(false)}>
+              {user.displayName}
+            </Link>
+            <button onClick={logout} className="btn-secondary text-xs">
+              Log out
+            </button>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
