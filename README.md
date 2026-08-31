@@ -15,6 +15,8 @@ against the `schema.prisma` + README spec that started this project.
   Google and Apple sign-in — see "Auth" below
 - Tailwind v4 for styling
 - Vitest for the game-scoring engine's unit tests
+- `mobile/` — an Expo Router (React Native) app covering the same features,
+  talking to the same API — see "Mobile app (Expo)" below
 
 ## Getting started
 
@@ -161,6 +163,45 @@ Apple's stable `sub` identifier, not email. And Apple's callback is a POST
 with form-encoded data (`response_mode=form_post`), not a redirect with a
 query string like Google's, because Apple's own sign-in sheet is the one
 making that request, not the user's browser navigating directly.
+
+## Mobile app (Expo)
+
+`mobile/` is a separate Expo Router app that talks to the same Next.js API
+above — same accounts, same rounds, same everything, just a native/React
+Native Web client instead of pages. It covers the full feature set: login,
+dashboard, round creation + live scorecard, friends, trade, inventory,
+season pass, chat, and profile.
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+That opens Expo's dev tools — press `w` for web, `i`/`a` for an iOS/Android
+simulator if you have one installed, or scan the QR code with the Expo Go
+app on your phone (same Wi-Fi network as your computer).
+
+**The API URL matters.** By default the app talks to
+`http://localhost:3000`, which only works when running in a browser or
+simulator on the same machine as the Next.js server. A physical phone can't
+resolve your computer's `localhost` — it needs your computer's LAN IP
+instead:
+
+```bash
+# find your computer's LAN IP (e.g. 192.168.1.42), then:
+EXPO_PUBLIC_API_URL=http://192.168.1.42:3000 npx expo start
+```
+
+Make sure `npm run dev` is running in the repo root at the same time — the
+mobile app is a client, it doesn't run its own copy of the backend.
+
+Auth works the same way as the web app underneath (`POST /api/auth/login`
+issues a JWT), but the mobile app sends it as an `Authorization: Bearer`
+header instead of relying on a cookie, since there's no shared cookie jar
+between a native app and a browser — the session token is stored in
+`expo-secure-store` on device, or `localStorage` when running as a web
+build.
 
 ## Deploying (Vercel + Neon, no local setup required)
 
