@@ -47,7 +47,7 @@ export default function InventoryPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Inventory</h1>
       {items.length === 0 && (
-        <p className="text-sm text-black/50 dark:text-white/50">
+        <p className="text-sm text-[var(--muted)]">
           Nothing yet — complete rounds to earn Season Pass cosmetics.
         </p>
       )}
@@ -57,7 +57,7 @@ export default function InventoryPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {entries.map((e) => (
               <div key={e.id} className="flex flex-col items-center gap-2 rounded-lg border border-[var(--border)] p-3 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-md bg-black/5 text-2xl dark:bg-white/10">
+                <div className="flex h-16 w-16 items-center justify-center rounded-md bg-white/5 text-2xl">
                   🏆
                 </div>
                 <span className="text-sm font-medium">{e.item.name}</span>
@@ -68,7 +68,7 @@ export default function InventoryPage() {
                     Equip
                   </button>
                 )}
-                {!e.item.tradeable && <span className="text-[10px] text-black/40 dark:text-white/40">Not tradeable</span>}
+                {!e.item.tradeable && <span className="text-[10px] text-[var(--muted)]">Not tradeable</span>}
               </div>
             ))}
           </div>

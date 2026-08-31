@@ -109,7 +109,7 @@ export default function TradePage() {
             ))}
           </select>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         <button className="btn-primary self-start" onClick={propose} disabled={!selectedFriend || !myItemId || !theirItemId}>
           Propose trade
         </button>
@@ -117,7 +117,7 @@ export default function TradePage() {
 
       <section className="card p-4">
         <h2 className="mb-2 font-semibold">Your trades</h2>
-        {trades.length === 0 && <p className="text-sm text-black/50 dark:text-white/50">No trades yet.</p>}
+        {trades.length === 0 && <p className="text-sm text-[var(--muted)]">No trades yet.</p>}
         <ul className="flex flex-col gap-2">
           {trades.map((t) => (
             <li key={t.id} className="flex flex-col gap-1 rounded-md border border-[var(--border)] p-2 text-sm">

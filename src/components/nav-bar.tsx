@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/components/session-provider";
@@ -34,10 +35,11 @@ export function NavBar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link
           href="/dashboard"
-          className="text-lg font-bold text-[var(--accent)]"
+          className="flex items-center gap-2 text-lg font-extrabold"
           onClick={() => setOpen(false)}
         >
-          ⛳ Greeni
+          <Image src="/greeni-mascot.png" alt="" width={32} height={26} className="shrink-0" />
+          <span className="glow-text">Greeni</span>
         </Link>
 
         <nav className="hidden flex-1 flex-wrap gap-1 text-sm sm:flex">
@@ -45,7 +47,7 @@ export function NavBar() {
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-md px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/10"
+              className="rounded-md px-3 py-1.5 hover:bg-white/5"
             >
               {l.label}
             </Link>
@@ -76,7 +78,7 @@ export function NavBar() {
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+              className="rounded-md px-3 py-2 hover:bg-white/5"
               onClick={() => setOpen(false)}
             >
               {l.label}

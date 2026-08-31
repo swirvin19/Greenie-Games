@@ -57,7 +57,7 @@ export default function DashboardPage() {
             <Link
               key={r.id}
               href={`/rounds/${r.id}`}
-              className="block rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/10"
+              className="block rounded-lg p-2 hover:bg-white/5"
             >
               {r.course?.name ?? r.courseName ?? "Round"} — started{" "}
               {new Date(r.startedAt).toLocaleString()}
@@ -86,14 +86,14 @@ export default function DashboardPage() {
       <section className="card p-4">
         <h2 className="mb-2 font-semibold">Friends playing right now</h2>
         {rounds && rounds.friendsLive.length === 0 && (
-          <p className="text-sm text-black/60 dark:text-white/60">Nobody&apos;s live right now.</p>
+          <p className="text-sm text-[var(--muted)]">Nobody&apos;s live right now.</p>
         )}
         <ul className="flex flex-col gap-2">
           {rounds?.friendsLive.map((r) => (
             <li key={r.id}>
               <Link
                 href={`/rounds/${r.id}`}
-                className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3 hover:bg-black/5 dark:hover:bg-white/10"
+                className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3 hover:bg-white/5"
               >
                 <span>
                   <strong>{r.owner.displayName}</strong> at {r.course?.name ?? r.courseName ?? "a course"}
@@ -144,9 +144,9 @@ export default function DashboardPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-black/5 p-3 text-center dark:bg-white/5">
+    <div className="rounded-lg bg-white/5 p-3 text-center">
       <div className="text-xl font-bold text-[var(--accent)]">{value}</div>
-      <div className="text-xs text-black/60 dark:text-white/60">{label}</div>
+      <div className="text-xs text-[var(--muted)]">{label}</div>
     </div>
   );
 }

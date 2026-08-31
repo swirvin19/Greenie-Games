@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/components/require-auth";
 import { apiFetch, ApiError } from "@/lib/client-api";
 import type { GameType } from "@/lib/games/types";
+import { MAIN_GAMES, SIDE_GAMES, STROKE_PLAY_HINT, STROKE_PLAY_LABEL } from "@/lib/games/catalog";
 
 interface Friend {
   friendshipId: string;
@@ -18,20 +19,6 @@ interface Course {
   state: string | null;
   teeBoxes: { id: string; name: string }[];
 }
-
-const GAME_OPTIONS: { type: GameType; label: string; hint: string }[] = [
-  { type: "NASSAU", label: "Nassau", hint: "Front 9 / back 9 / overall match play" },
-  { type: "SKINS", label: "Skins", hint: "Lowest score wins the hole outright" },
-  { type: "STABLEFORD", label: "Stableford", hint: "Points per hole relative to par" },
-  { type: "VEGAS", label: "Vegas", hint: "2v2 teams, combined-digit scoring" },
-  { type: "WOLF", label: "Wolf", hint: "Rotating wolf vs. the field" },
-  { type: "BANKER", label: "Banker", hint: "Rotating banker plays everyone" },
-  { type: "GREENIE", label: "Greenie", hint: "Closest to the pin on par 3s" },
-  { type: "KOTG", label: "King of the Green", hint: "Point per green hit in regulation" },
-  { type: "BOMB", label: "Bomb", hint: "Longest drive on non-par-3s" },
-  { type: "VAULT", label: "Vault", hint: "Pooled bonus, most holes won takes it" },
-  { type: "CHAOS", label: "Chaos Mode", hint: "A random game each hole" },
-];
 
 export default function NewRoundPage() {
   const { user, loading } = useRequireAuth();
@@ -138,7 +125,9 @@ export default function NewRoundPage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-8">
-      <h1 className="text-2xl font-bold">Start a round</h1>
+      <h1 className="text-2xl font-bold">
+        Start a <span className="glow-text">round</span>
+      </h1>
 
       <section className="card flex flex-col gap-3 p-4">
         <h2 className="font-semibold">Course</h2>
@@ -166,7 +155,7 @@ export default function NewRoundPage() {
             />
             <div className="flex flex-col gap-1">
               {courses.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 rounded-md p-1.5 hover:bg-black/5 dark:hover:bg-white/10">
+                <label key={c.id} className="flex items-center gap-2 rounded-md p-1.5 hover:bg-white/5">
                   <input
                     type="radio"
                     name="course"
@@ -177,7 +166,7 @@ export default function NewRoundPage() {
                 </label>
               ))}
               {courses.length === 0 && (
-                <p className="text-sm text-black/50 dark:text-white/50">No matches yet — try manual entry.</p>
+                <p className="text-sm text-[var(--muted)]">No matches yet — try manual entry.</p>
               )}
             </div>
           </div>
@@ -235,41 +224,88 @@ export default function NewRoundPage() {
             </label>
           ))}
           {friends.length === 0 && (
-            <p className="text-sm text-black/50 dark:text-white/50">
+            <p className="text-sm text-[var(--muted)]">
               Add friends first to play with them — playing solo works too.
             </p>
           )}
         </div>
       </section>
 
-      <section className="card flex flex-col gap-3 p-4">
-        <h2 className="font-semibold">Side games</h2>
+      <section className="card flex flex-col gap-4 p-4">
+        <div>
+          <h2 className="font-semibold">Main game</h2>
+          <p className="text-xs text-[var(--muted)]">Pick the headline format for the round.</p>
+        </div>
+
+        <div className="flex items-start gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 p-3 text-sm">
+          <span className="mt-0.5 text-[var(--accent)]">●</span>
+          <span>
+            <span className="font-medium">{STROKE_PLAY_LABEL}</span>
+            <br />
+            <span className="text-xs text-[var(--muted)]">{STROKE_PLAY_HINT}</span>
+          </span>
+        </div>
+
         <div className="grid gap-2 sm:grid-cols-2">
-          {GAME_OPTIONS.map((g) => (
-            <label
-              key={g.type}
-              className="flex items-start gap-2 rounded-lg border border-[var(--border)] p-2 text-sm"
-            >
-              <input
-                type="checkbox"
-                checked={enabledGames.includes(g.type)}
-                onChange={() => toggleGame(g.type)}
-                className="mt-1"
-              />
-              <span>
-                <span className="font-medium">{g.label}</span>
-                <br />
-                <span className="text-xs text-black/60 dark:text-white/60">{g.hint}</span>
-              </span>
-            </label>
-          ))}
+          {MAIN_GAMES.map((g) => {
+            const checked = enabledGames.includes(g.type);
+            return (
+              <label
+                key={g.type}
+                className={`flex items-start gap-2 rounded-lg border p-3 text-sm transition-colors ${
+                  checked
+                    ? "border-[var(--accent)] bg-[var(--accent)]/10"
+                    : "border-[var(--border)] hover:border-[var(--accent)]/40"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleGame(g.type)}
+                  className="mt-1 accent-[var(--accent)]"
+                />
+                <span>
+                  <span className="font-medium">{g.label}</span>
+                  <br />
+                  <span className="text-xs text-[var(--muted)]">{g.hint}</span>
+                </span>
+              </label>
+            );
+          })}
         </div>
         {needsFourForVegas && (
-          <p className="text-sm text-amber-600">Vegas needs exactly 4 players selected above.</p>
+          <p className="text-sm text-amber-400">Vegas needs exactly 4 players selected above.</p>
         )}
       </section>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <section className="card flex flex-col gap-3 p-4">
+        <div>
+          <h2 className="font-semibold">Side bets</h2>
+          <p className="text-xs text-[var(--muted)]">Layer any of these on top, however many you want.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SIDE_GAMES.map((g) => {
+            const checked = enabledGames.includes(g.type);
+            return (
+              <button
+                key={g.type}
+                type="button"
+                onClick={() => toggleGame(g.type)}
+                title={g.hint}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  checked
+                    ? "border-[var(--accent2)] bg-[var(--accent2)]/15 text-[var(--accent2)]"
+                    : "border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent2)]/50"
+                }`}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
       <button className="btn-primary self-start" onClick={onSubmit} disabled={submitting}>
         {submitting ? "Starting…" : "Start round"}
       </button>

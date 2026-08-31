@@ -59,14 +59,14 @@ export default function SeasonPassPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-bold">Season Pass</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {passes.length === 0 && <p className="text-sm text-black/50 dark:text-white/50">No active pass right now.</p>}
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
+      {passes.length === 0 && <p className="text-sm text-[var(--muted)]">No active pass right now.</p>}
       {passes.map((pass) => (
         <section key={pass.id} className="card p-4">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h2 className="font-semibold">{pass.name}</h2>
-              {pass.theme && <p className="text-xs text-black/50 dark:text-white/50">{pass.theme}</p>}
+              {pass.theme && <p className="text-xs text-[var(--muted)]">{pass.theme}</p>}
             </div>
             {!pass.premiumUnlocked && (
               <button className="btn-primary text-sm" onClick={() => unlockPremium(pass.id)}>
@@ -78,7 +78,7 @@ export default function SeasonPassPage() {
           <div className="grid gap-2 sm:grid-cols-2">
             {["FREE", "PREMIUM"].map((track) => (
               <div key={track}>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-black/50 dark:text-white/50">
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                   {track} track
                 </h3>
                 <ul className="flex flex-col gap-1">
@@ -94,14 +94,14 @@ export default function SeasonPassPage() {
                         <span>
                           {r.item.name}
                           <br />
-                          <span className="text-xs text-black/50 dark:text-white/50">
+                          <span className="text-xs text-[var(--muted)]">
                             {r.progressValue}/{r.thresholdValue} {THRESHOLD_LABEL[r.thresholdType]}
                           </span>
                         </span>
                         {r.owned ? (
                           <span className="text-xs text-[var(--accent)]">Owned</span>
                         ) : (
-                          <span className="text-xs text-black/40 dark:text-white/40">Locked</span>
+                          <span className="text-xs text-[var(--muted)]">Locked</span>
                         )}
                       </li>
                     ))}

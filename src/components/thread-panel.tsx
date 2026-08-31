@@ -72,10 +72,10 @@ export function ThreadPanel({ threadId, title }: { threadId: string; title?: str
             </div>
             {m.senderId !== user?.id && (
               <span className="hidden shrink-0 gap-2 group-hover:flex">
-                <button onClick={() => report(m.id)} className="text-xs text-black/40 hover:underline dark:text-white/40">
+                <button onClick={() => report(m.id)} className="text-xs text-[var(--muted)] hover:underline">
                   Report
                 </button>
-                <button onClick={() => block(m.senderId)} className="text-xs text-black/40 hover:underline dark:text-white/40">
+                <button onClick={() => block(m.senderId)} className="text-xs text-[var(--muted)] hover:underline">
                   Block
                 </button>
               </span>
@@ -84,7 +84,7 @@ export function ThreadPanel({ threadId, title }: { threadId: string; title?: str
         ))}
         <div ref={bottomRef} />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
       <div className="flex gap-2">
         <input
           value={text}

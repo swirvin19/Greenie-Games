@@ -70,7 +70,7 @@ export default function ChatListPage() {
             </label>
           ))}
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         <button className="btn-primary self-start" onClick={startChat} disabled={selectedFriends.length === 0}>
           Start
         </button>
@@ -80,15 +80,15 @@ export default function ChatListPage() {
         {threads.map((t) => {
           const others = t.participants.filter((p) => p.user.id !== user.id).map((p) => p.user.displayName);
           return (
-            <Link key={t.id} href={`/chat/${t.id}`} className="card flex items-center justify-between p-3 hover:bg-black/5 dark:hover:bg-white/10">
+            <Link key={t.id} href={`/chat/${t.id}`} className="card flex items-center justify-between p-3 hover:bg-white/5">
               <span>{others.join(", ") || "Just you"}</span>
-              <span className="max-w-[50%] truncate text-xs text-black/50 dark:text-white/50">
+              <span className="max-w-[50%] truncate text-xs text-[var(--muted)]">
                 {t.messages[0]?.body ?? "No messages yet"}
               </span>
             </Link>
           );
         })}
-        {threads.length === 0 && <p className="text-sm text-black/50 dark:text-white/50">No chats yet.</p>}
+        {threads.length === 0 && <p className="text-sm text-[var(--muted)]">No chats yet.</p>}
       </section>
     </div>
   );

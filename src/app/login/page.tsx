@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/client-api";
@@ -41,9 +42,14 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-sm py-12">
-      <h1 className="mb-6 text-2xl font-bold">Log in</h1>
+      <div className="mb-6 flex flex-col items-center gap-2 text-center">
+        <Image src="/greeni-mascot.png" alt="" width={72} height={58} />
+        <h1 className="text-2xl font-bold">
+          Welcome <span className="glow-text">back</span>
+        </h1>
+      </div>
       <OAuthButtons />
-      <div className="my-4 flex items-center gap-3 text-xs text-black/40 dark:text-white/40">
+      <div className="my-4 flex items-center gap-3 text-xs text-[var(--muted)]">
         <span className="h-px flex-1 bg-[var(--border)]" />
         or
         <span className="h-px flex-1 bg-[var(--border)]" />
@@ -63,7 +69,7 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting ? "Logging in…" : "Log in"}
         </button>
@@ -74,7 +80,7 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
-      <p className="mt-2 text-xs text-black/50 dark:text-white/50">
+      <p className="mt-2 text-xs text-[var(--muted)]">
         Demo accounts: jon@example.com / dale@example.com / mia@example.com — password
         &quot;password123&quot;
       </p>

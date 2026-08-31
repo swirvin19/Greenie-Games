@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useRequireAuth } from "@/components/require-auth";
 import { apiFetch, ApiError } from "@/lib/client-api";
 import type { GamesConfig, HoleEntry, RoundResults } from "@/lib/games/types";
+import { gameMeta } from "@/lib/games/catalog";
 import { ThreadPanel } from "@/components/thread-panel";
 
 interface RoundDetail {
@@ -65,6 +66,8 @@ export default function RoundPage() {
   const isOwner = round.ownerId === user.id;
   const isFollowing = round.followers.some((f) => f.userId === user.id);
   const nameFor = (id: string) => players.find((p) => p.id === id)?.displayName ?? id;
+  const mainGameResults = results.games.filter((g) => gameMeta(g.game)?.group === "main");
+  const sideGameResults = results.games.filter((g) => gameMeta(g.game)?.group === "side");
 
   async function setStrokes(holeNumber: number, playerId: string, value: string) {
     const strokes = value === "" ? null : Number(value);
@@ -110,8 +113,9 @@ export default function RoundPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{round.course?.name ?? round.courseName ?? "Round"}</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Hosted by {round.owner.displayName} · {round.status === "IN_PROGRESS" ? "Live" : "Completed"}
+          <p className="text-sm text-[var(--muted)]">
+            Hosted by {round.owner.displayName} ·{" "}
+            {round.status === "IN_PROGRESS" ? <span className="glow-text font-medium">Live</span> : "Completed"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -128,7 +132,7 @@ export default function RoundPage() {
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
 
       <Scorecard
         round={round}
@@ -138,8 +142,11 @@ export default function RoundPage() {
         onMarker={setHoleMarker}
       />
 
-      <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Leaderboard</h2>
+      <section className="card border-[var(--accent)]/30 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-[var(--accent)]">●</span>
+          <h2 className="font-semibold">Stroke Play</h2>
+        </div>
         <ul className="flex flex-col gap-1 text-sm">
           {results.leaderboard
             .slice()
@@ -150,7 +157,7 @@ export default function RoundPage() {
                 <span>
                   {row.totalStrokes} strokes ({row.holesPlayed} holes)
                   {row.toPar !== null && (
-                    <span className="ml-2 text-black/60 dark:text-white/60">
+                    <span className="ml-2 text-[var(--muted)]">
                       {row.toPar > 0 ? `+${row.toPar}` : row.toPar}
                     </span>
                   )}
@@ -160,9 +167,12 @@ export default function RoundPage() {
         </ul>
       </section>
 
-      {results.games.map((g) => (
-        <section key={g.game} className="card p-4">
-          <h2 className="mb-2 font-semibold">{g.label}</h2>
+      {mainGameResults.map((g) => (
+        <section key={g.game} className="card border-[var(--accent)]/30 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-[var(--accent)]">●</span>
+            <h2 className="font-semibold">{g.label}</h2>
+          </div>
           <ul className="flex flex-col gap-1 text-sm">
             {g.standings
               .slice()
@@ -179,6 +189,38 @@ export default function RoundPage() {
           </ul>
         </section>
       ))}
+
+      {sideGameResults.length > 0 && (
+        <section className="card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span style={{ color: "var(--accent2)" }}>●</span>
+            <h2 className="font-semibold">Side bets</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {sideGameResults.map((g) => (
+              <div key={g.game}>
+                <h3 className="mb-1 text-sm font-medium" style={{ color: "var(--accent2)" }}>
+                  {g.label}
+                </h3>
+                <ul className="flex flex-col gap-1 text-sm">
+                  {g.standings
+                    .slice()
+                    .sort((a, b) => b.value - a.value)
+                    .map((s) => (
+                      <li key={s.playerId} className="flex justify-between">
+                        <span>{nameFor(s.playerId)}</span>
+                        <span>
+                          {s.value}
+                          {s.note ? ` — ${s.note}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <WagerPanel roundId={roundId} players={players} wagers={wagers} onChange={load} />
 
@@ -237,7 +279,9 @@ function Scorecard({
                       disabled={!canEdit}
                       onClick={() => onMarker(hole.holeNumber, "greenieWinner", pid)}
                       className={`ml-1 rounded px-1 text-xs ${
-                        hole.greenieWinner === pid ? "bg-[var(--accent)] text-white" : "bg-black/5 dark:bg-white/10"
+                        hole.greenieWinner === pid
+                          ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                          : "bg-white/5 text-[var(--muted)]"
                       }`}
                     >
                       G
@@ -249,7 +293,9 @@ function Scorecard({
                       disabled={!canEdit}
                       onClick={() => onMarker(hole.holeNumber, "bombWinner", pid)}
                       className={`ml-1 rounded px-1 text-xs ${
-                        hole.bombWinner === pid ? "bg-[var(--accent)] text-white" : "bg-black/5 dark:bg-white/10"
+                        hole.bombWinner === pid
+                          ? "bg-[var(--accent2)] text-white"
+                          : "bg-white/5 text-[var(--muted)]"
                       }`}
                     >
                       B
@@ -261,7 +307,7 @@ function Scorecard({
           ))}
         </tbody>
       </table>
-      <p className="mt-2 text-xs text-black/50 dark:text-white/50">
+      <p className="mt-2 text-xs text-[var(--muted)]">
         G = mark closest-to-pin (par 3s) for Greenie · B = mark longest drive for Bomb
       </p>
     </section>
@@ -302,7 +348,7 @@ function WagerPanel({
   return (
     <section className="card p-4">
       <h2 className="mb-2 font-semibold">Remote wagers</h2>
-      <p className="mb-2 text-xs text-black/50 dark:text-white/50">
+      <p className="mb-2 text-xs text-[var(--muted)]">
         Informal, no money changes hands here — just a running record of who said what.
       </p>
       <ul className="mb-3 flex flex-col gap-1 text-sm">
@@ -310,7 +356,7 @@ function WagerPanel({
           <li key={w.id} className="flex items-center justify-between gap-2">
             <span>
               {w.bettor.displayName} on {w.target.displayName}: {w.description}{" "}
-              <em className="text-black/50 dark:text-white/50">({w.status})</em>
+              <em className="text-[var(--muted)]">({w.status})</em>
             </span>
             {w.status === "OPEN" && (
               <span className="flex gap-1">
@@ -346,7 +392,7 @@ function WagerPanel({
           Place
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
     </section>
   );
 }

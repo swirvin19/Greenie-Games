@@ -37,12 +37,12 @@ export default function ProfilePage() {
         <p className="text-sm">
           <strong>{user.displayName}</strong>
         </p>
-        <p className="text-sm text-black/60 dark:text-white/60">{user.email}</p>
+        <p className="text-sm text-[var(--muted)]">{user.email}</p>
       </section>
 
       <section className="card p-4">
         <h2 className="mb-2 font-semibold">Blocked users</h2>
-        {blocks.length === 0 && <p className="text-sm text-black/50 dark:text-white/50">Nobody blocked.</p>}
+        {blocks.length === 0 && <p className="text-sm text-[var(--muted)]">Nobody blocked.</p>}
         <ul className="flex flex-col gap-2">
           {blocks.map((b) => (
             <li key={b.id} className="flex items-center justify-between text-sm">

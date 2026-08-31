@@ -87,10 +87,10 @@ export default function FriendsPage() {
         <h2 className="mb-2 font-semibold">Add a friend</h2>
         <input placeholder="Search by name or email…" value={query} onChange={(e) => setQuery(e.target.value)} />
         {notice && <p className="mt-1 text-sm text-[var(--accent)]">{notice}</p>}
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-sm text-[var(--danger)]">{error}</p>}
         <ul className="mt-2 flex flex-col gap-1">
           {results.map((r) => (
-            <li key={r.id} className="flex items-center justify-between rounded-md p-1.5 hover:bg-black/5 dark:hover:bg-white/10">
+            <li key={r.id} className="flex items-center justify-between rounded-md p-1.5 hover:bg-white/5">
               <span>{r.displayName}</span>
               <button className="btn-secondary text-xs" onClick={() => r.email && sendRequest(r.email)}>
                 Add
@@ -124,7 +124,7 @@ export default function FriendsPage() {
       {outgoing.length > 0 && (
         <section className="card p-4">
           <h2 className="mb-2 font-semibold">Sent requests</h2>
-          <ul className="flex flex-col gap-2 text-sm text-black/60 dark:text-white/60">
+          <ul className="flex flex-col gap-2 text-sm text-[var(--muted)]">
             {outgoing.map((f) => (
               <li key={f.friendshipId} className="flex items-center justify-between">
                 <span>{f.user.displayName} — pending</span>
@@ -139,7 +139,7 @@ export default function FriendsPage() {
 
       <section className="card p-4">
         <h2 className="mb-2 font-semibold">Your friends</h2>
-        {accepted.length === 0 && <p className="text-sm text-black/50 dark:text-white/50">No friends yet.</p>}
+        {accepted.length === 0 && <p className="text-sm text-[var(--muted)]">No friends yet.</p>}
         <ul className="flex flex-col gap-1">
           {accepted.map((f) => (
             <li key={f.friendshipId}>{f.user.displayName}</li>
