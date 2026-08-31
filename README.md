@@ -8,8 +8,9 @@ against the `schema.prisma` + README spec that started this project.
 ## Stack
 
 - Next.js (App Router) + TypeScript, Route Handlers as the API layer
-- Prisma + SQLite for local dev (see "Switching to Postgres" below — the
-  original spec's datasource)
+- Prisma + Postgres (the original spec's datasource) — needed for a real
+  deployment, since Vercel's serverless functions have no persistent local
+  disk for a SQLite file to live on
 - Custom email/password auth (bcrypt + a signed JWT session cookie), plus
   Google and Apple sign-in — see "Auth" below
 - Tailwind v4 for styling
@@ -17,12 +18,22 @@ against the `schema.prisma` + README spec that started this project.
 
 ## Getting started
 
+You need a Postgres database — a free one from [Neon](https://neon.tech) or
+[Supabase](https://supabase.com) takes a couple of minutes to set up (see
+"Deploying" below for click-by-click Neon steps).
+
 ```bash
+cp .env.example .env   # then paste your real DATABASE_URL into it
 npm install
-npx prisma migrate dev   # creates dev.db and applies migrations
+npx prisma migrate dev   # applies migrations
 npm run db:seed          # seeds 3 demo users, a season pass, and a course
 npm run dev
 ```
+
+**`.env` is git-ignored on purpose** (it can hold real secrets) — a fresh
+clone has no `.env` file until you make one yourself from `.env.example`.
+Skipping that step is the single most common reason `npx prisma migrate
+dev` fails right after cloning.
 
 Demo accounts (seeded): `jon@example.com`, `dale@example.com`,
 `mia@example.com` — password `password123`. Jon and Dale start as friends.
@@ -75,7 +86,7 @@ spec was explicitly a starting point:
   Google/Apple sign-in flow, so a double-submitted OAuth callback can't
   create two accounts for the same identity. Doesn't constrain
   email/password users — every one of them has a `null` `authProviderId`,
-  and both SQLite and Postgres treat `null`s as distinct in a unique index.
+  and Postgres treats `null`s as distinct in a unique index.
 
 No other fields were added. `RemoteWager` still has no money fields —
 that's enforced by not having a purchase/settlement amount anywhere in the
@@ -151,13 +162,33 @@ with form-encoded data (`response_mode=form_post`), not a redirect with a
 query string like Google's, because Apple's own sign-in sheet is the one
 making that request, not the user's browser navigating directly.
 
-## Switching to Postgres
+## Deploying (Vercel + Neon, no local setup required)
 
-`prisma/schema.prisma` uses `provider = "sqlite"` so this runs with zero
-external setup. Nothing in the schema is SQLite-specific — to move to
-Postgres (the original spec's datasource), change the provider back to
-`"postgresql"`, point `DATABASE_URL` at a real instance, and run `npx
-prisma migrate dev` again.
+`npm run build` runs `prisma migrate deploy` before `next build`, and
+`postinstall` runs `prisma generate` — so a host that runs `npm install`
+then `npm run build` (Vercel does both automatically) sets up the database
+schema by itself. Nothing to run by hand beyond setting the environment
+variables below.
+
+1. **Get a free Postgres database** at [neon.tech](https://neon.tech) — sign
+   up, create a project, and copy the connection string it shows you
+   (starts with `postgresql://`).
+2. **Go to [vercel.com](https://vercel.com)**, sign up/log in (using GitHub
+   is easiest), click **Add New… → Project**, and import this repository.
+3. Vercel auto-detects Next.js — before clicking Deploy, open **Environment
+   Variables** and add:
+   - `DATABASE_URL` — the connection string from step 1
+   - `AUTH_SECRET` — any long random string you make up
+   - (optional) the `GOOGLE_*` / `APPLE_*` variables from the Auth section
+     above, once you have them — using your Vercel URL (e.g.
+     `https://your-app.vercel.app/api/auth/google/callback`) as the
+     redirect URI instead of `localhost`
+4. Click **Deploy**. Vercel installs dependencies, applies the database
+   migrations, and builds the app — you'll get a real URL
+   (`https://your-app.vercel.app`) when it finishes.
+5. Open that URL and click **Sign up** to create a real account — the
+   deployed database starts empty, so there's no seeded demo data unless
+   you run `npm run db:seed` yourself against that same `DATABASE_URL`.
 
 ## What's not here
 

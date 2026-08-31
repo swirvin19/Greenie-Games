@@ -5,12 +5,12 @@
 // two-track progression, friend graph, trading, round tracking,
 // remote (informal) wagers, and chat.
 //
-// Adapted from the original design-spec schema for a runnable
-// dev build: datasource is SQLite (zero external setup for this
-// environment). Swap provider back to "postgresql" and point
-// DATABASE_URL at a real Postgres instance for production — no
-// model in this file uses anything Postgres-specific, so that's
-// a one-line change plus `prisma migrate`.
+// Postgres, per the original design spec — needed for a real
+// deployment (Vercel's serverless functions have no persistent
+// local disk, so SQLite's single-file database doesn't survive
+// between requests there). Point DATABASE_URL at any Postgres
+// instance (Neon, Supabase, Vercel Postgres, etc.) and run
+// `npx prisma migrate deploy`.
 //
 // Only addition vs. the original spec: User.passwordHash, needed
 // to support authProvider = "email" without a third-party IdP.
@@ -21,7 +21,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
