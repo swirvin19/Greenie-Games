@@ -1,0 +1,422 @@
+// ============================================================
+// GREENI — data model
+//
+// Covers: accounts, cosmetic items/inventory, season passes,
+// two-track progression, friend graph, trading, round tracking,
+// remote (informal) wagers, and chat.
+//
+// Adapted from the original design-spec schema for a runnable
+// dev build: datasource is SQLite (zero external setup for this
+// environment). Swap provider back to "postgresql" and point
+// DATABASE_URL at a real Postgres instance for production — no
+// model in this file uses anything Postgres-specific, so that's
+// a one-line change plus `prisma migrate`.
+//
+// Only addition vs. the original spec: User.passwordHash, needed
+// to support authProvider = "email" without a third-party IdP.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------
+// ACCOUNTS
+// ---------------------------------------------------------
+
+model User {
+  id             String   @id @default(cuid())
+  email          String?  @unique
+  phone          String?  @unique
+  authProvider   String // "apple" | "google" | "email"
+  authProviderId String? // external id from Sign in with Apple/Google
+  passwordHash   String? // set only when authProvider = "email"
+  displayName    String
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+
+  // Equipped cosmetics — nullable FKs into the user's own inventory.
+  // Kept separate from Inventory.equipped (below) so "what's currently
+  // showing in the UI" is a single fast lookup instead of a query.
+  equippedMascotSkinId  String?
+  equippedColorSchemeId String?
+  equippedBannerStyleId String?
+  equippedIconId        String?
+
+  progress       UserProgress?
+  inventory      InventoryItem[]
+  roundsOwned    Round[]         @relation("RoundOwner")
+  roundsFollowed RoundFollower[]
+  wagersPlaced   RemoteWager[]   @relation("WagerBettor")
+  wagersAgainst  RemoteWager[]   @relation("WagerTarget")
+
+  friendshipsA         Friendship[] @relation("FriendshipUserA")
+  friendshipsB         Friendship[] @relation("FriendshipUserB")
+  friendshipsRequested Friendship[] @relation("FriendshipRequestedBy")
+
+  tradesSent     Trade[] @relation("TradeFrom")
+  tradesReceived Trade[] @relation("TradeTo")
+
+  seasonPassPurchases SeasonPassPurchase[]
+
+  threadParticipation ThreadParticipant[]
+  messagesSent        Message[]
+  reportsFiled         Report[] @relation("ReportReporter")
+  reportsAgainst        Report[] @relation("ReportTarget")
+  blocksMade            Block[]  @relation("BlockBlocker")
+  blocksReceived        Block[]  @relation("BlockBlocked")
+}
+
+// ---------------------------------------------------------
+// COSMETICS: catalog + per-user inventory
+// ---------------------------------------------------------
+
+enum ItemType {
+  MASCOT_SKIN
+  COLOR_SCHEME
+  BANNER_STYLE
+  ICON
+}
+
+enum ItemSource {
+  SEASON_PASS_FREE
+  SEASON_PASS_PREMIUM
+  HOLIDAY_DROP
+  STORE_PURCHASE
+  TRADE
+}
+
+model Item {
+  id           String      @id @default(cuid())
+  type         ItemType
+  name         String
+  description  String?
+  imageUrl     String
+  source       ItemSource
+  tradeable    Boolean     @default(true) // free-track commons should be set false
+  priceCents   Int? // set only for STORE_PURCHASE items
+  seasonPassId String?
+  seasonPass   SeasonPass? @relation(fields: [seasonPassId], references: [id])
+
+  inventoryEntries InventoryItem[]
+  passRewards      PassReward[]
+}
+
+model InventoryItem {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  itemId      String
+  item        Item       @relation(fields: [itemId], references: [id])
+  acquiredVia ItemSource
+  acquiredAt  DateTime   @default(now())
+  equipped    Boolean    @default(false)
+
+  tradesFrom Trade[] @relation("TradeFromItem")
+  tradesTo   Trade[] @relation("TradeToItem")
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------
+// SEASON PASSES + PROGRESSION
+// ---------------------------------------------------------
+
+model SeasonPass {
+  id         String   @id @default(cuid())
+  name       String // "Masters Week", "Summer Slam", "Ryder Cup", etc.
+  theme      String?
+  startDate  DateTime
+  endDate    DateTime
+  priceCents Int // premium track unlock price
+  active     Boolean  @default(true)
+
+  items     Item[]
+  rewards   PassReward[]
+  purchases SeasonPassPurchase[]
+}
+
+// One-time premium-track unlock record — the schema calls out
+// SeasonPass.priceCents as a single unlock price with no billing cycle;
+// this is the ledger that makes that meaningful without adding any
+// payment-processing fields (no processor, no card data — a real store
+// purchase flow writes here after charging elsewhere).
+model SeasonPassPurchase {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  seasonPassId String
+  seasonPass   SeasonPass @relation(fields: [seasonPassId], references: [id])
+  purchasedAt  DateTime   @default(now())
+
+  @@unique([userId, seasonPassId])
+}
+
+enum PassTrack {
+  FREE
+  PREMIUM
+}
+
+enum ThresholdType {
+  ROUNDS_COMPLETED
+  HOLES_LOGGED
+  FRIENDS_PLAYED_WITH
+  INVITES_CONVERTED
+}
+
+model PassReward {
+  id             String        @id @default(cuid())
+  seasonPassId   String
+  seasonPass     SeasonPass    @relation(fields: [seasonPassId], references: [id])
+  track          PassTrack
+  thresholdType  ThresholdType
+  thresholdValue Int
+  itemId         String
+  item           Item          @relation(fields: [itemId], references: [id])
+}
+
+// Running counters that PassReward thresholds are checked against.
+model UserProgress {
+  userId                    String   @id
+  user                      User     @relation(fields: [userId], references: [id])
+  roundsCompleted           Int      @default(0)
+  holesLogged               Int      @default(0)
+  distinctFriendsPlayedWith Int      @default(0)
+  invitesConverted          Int      @default(0)
+  updatedAt                 DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// FRIEND GRAPH
+// ---------------------------------------------------------
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+model Friendship {
+  id        String           @id @default(cuid())
+  userAId   String // convention: userAId < userBId to prevent duplicate pairs
+  userA     User             @relation("FriendshipUserA", fields: [userAId], references: [id])
+  userBId   String
+  userB     User             @relation("FriendshipUserB", fields: [userBId], references: [id])
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  // Who sent the request — userA/userB is just an ID-sorted pair for the
+  // uniqueness constraint, so this is needed separately to know who to
+  // credit for PassReward.thresholdType = INVITES_CONVERTED on accept.
+  requestedById String?
+  requestedBy   User?    @relation("FriendshipRequestedBy", fields: [requestedById], references: [id])
+
+  @@unique([userAId, userBId])
+}
+
+// ---------------------------------------------------------
+// TRADING
+// ---------------------------------------------------------
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+model Trade {
+  id         String        @id @default(cuid())
+  fromUserId String
+  fromUser   User          @relation("TradeFrom", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User          @relation("TradeTo", fields: [toUserId], references: [id])
+  fromItemId String
+  fromItem   InventoryItem @relation("TradeFromItem", fields: [fromItemId], references: [id])
+  toItemId   String
+  toItem     InventoryItem @relation("TradeToItem", fields: [toItemId], references: [id])
+  status     TradeStatus   @default(PENDING)
+  createdAt  DateTime      @default(now())
+  resolvedAt DateTime?
+}
+
+// ---------------------------------------------------------
+// COURSES
+// ---------------------------------------------------------
+
+model Course {
+  id         String  @id @default(cuid())
+  externalId String? @unique // id from the licensed course-data provider, null if user-entered
+  name       String
+  latitude   Float?
+  longitude  Float?
+  city       String?
+  state      String?
+  country    String?
+
+  teeBoxes TeeBox[]
+  holes    CourseHole[]
+  rounds   Round[]
+}
+
+model TeeBox {
+  id           String @id @default(cuid())
+  courseId     String
+  course       Course @relation(fields: [courseId], references: [id])
+  name         String // "Black", "Blue", "White", "Red", etc.
+  slopeRating  Int?
+  courseRating Float?
+  totalYardage Int?
+
+  holeYardages CourseHole[]
+  rounds       Round[]
+}
+
+model CourseHole {
+  id         String @id @default(cuid())
+  courseId   String
+  course     Course @relation(fields: [courseId], references: [id])
+  teeBoxId   String
+  teeBox     TeeBox @relation(fields: [teeBoxId], references: [id])
+  holeNumber Int // 1-18
+  par        Int
+  yardage    Int?
+
+  @@unique([courseId, teeBoxId, holeNumber])
+}
+
+// ---------------------------------------------------------
+// ROUNDS + REMOTE WAGERS
+// ---------------------------------------------------------
+
+enum RoundStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Round {
+  id          String      @id @default(cuid())
+  ownerId     String
+  owner       User        @relation("RoundOwner", fields: [ownerId], references: [id])
+  courseId    String?
+  course      Course?     @relation(fields: [courseId], references: [id])
+  teeBoxId    String?
+  teeBox      TeeBox?     @relation(fields: [teeBoxId], references: [id])
+  courseName  String? // fallback free-text if no Course match (unmapped/private course)
+  status      RoundStatus @default(IN_PROGRESS)
+  gamesConfig Json // mirrors the `games` object from the app
+  scoreData   Json // mirrors the `holes` array from the app
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+
+  followers RoundFollower[]
+  wagers    RemoteWager[]
+  thread    Thread?
+}
+
+model RoundFollower {
+  roundId    String
+  round      Round     @relation(fields: [roundId], references: [id])
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  notifiedAt DateTime?
+
+  @@id([roundId, userId])
+}
+
+enum WagerStatus {
+  OPEN
+  SETTLED_WIN
+  SETTLED_LOSS
+  VOID
+}
+
+model RemoteWager {
+  id           String      @id @default(cuid())
+  roundId      String
+  round        Round       @relation(fields: [roundId], references: [id])
+  bettorId     String // e.g. Jon
+  bettor       User        @relation("WagerBettor", fields: [bettorId], references: [id])
+  targetUserId String // e.g. Dale — the player being bet on
+  target       User        @relation("WagerTarget", fields: [targetUserId], references: [id])
+  description  String // free text: "Dale won't break 85 — $20"
+  status       WagerStatus @default(OPEN)
+  createdAt    DateTime    @default(now())
+  settledAt    DateTime?
+
+  // NOTE: intentionally no amountCents/currency/paymentMethod fields.
+  // Do not add payment processing fields to this model.
+}
+
+// ---------------------------------------------------------
+// CHAT
+// ---------------------------------------------------------
+
+enum ThreadType {
+  ROUND
+  FRIEND_DM
+  GROUP
+}
+
+model Thread {
+  id        String     @id @default(cuid())
+  type      ThreadType
+  roundId   String?    @unique // set when type = ROUND
+  round     Round?     @relation(fields: [roundId], references: [id])
+  createdAt DateTime   @default(now())
+
+  participants ThreadParticipant[]
+  messages     Message[]
+}
+
+model ThreadParticipant {
+  threadId String
+  thread   Thread   @relation(fields: [threadId], references: [id])
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@id([threadId, userId])
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  threadId  String
+  thread    Thread    @relation(fields: [threadId], references: [id])
+  senderId  String
+  sender    User      @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime? // set by moderation action instead of hard-deleting
+
+  reports Report[]
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reporter       User     @relation("ReportReporter", fields: [reporterId], references: [id])
+  reportedUserId String
+  reportedUser   User     @relation("ReportTarget", fields: [reportedUserId], references: [id])
+  messageId      String?
+  message        Message? @relation(fields: [messageId], references: [id])
+  reason         String
+  status         String   @default("OPEN") // OPEN | REVIEWED | ACTIONED
+  createdAt      DateTime @default(now())
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlockBlocker", fields: [blockerId], references: [id])
+  blockedId String
+  blocked   User     @relation("BlockBlocked", fields: [blockedId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
