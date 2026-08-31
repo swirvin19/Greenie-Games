@@ -70,6 +70,12 @@ model User {
   reportsAgainst        Report[] @relation("ReportTarget")
   blocksMade            Block[]  @relation("BlockBlocker")
   blocksReceived        Block[]  @relation("BlockBlocked")
+
+  // Prevents a double-submit on the OAuth callback from creating two
+  // accounts for the same Apple/Google identity. NULL authProviderId
+  // (every email/password user) isn't constrained by this — Postgres and
+  // SQLite both treat NULLs as distinct in a unique index.
+  @@unique([authProvider, authProviderId])
 }
 
 // ---------------------------------------------------------

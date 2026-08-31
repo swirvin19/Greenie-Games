@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/client-api";
 import { useSession } from "@/components/session-provider";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
@@ -33,6 +34,12 @@ export default function SignupPage() {
   return (
     <div className="mx-auto max-w-sm py-12">
       <h1 className="mb-6 text-2xl font-bold">Create an account</h1>
+      <OAuthButtons />
+      <div className="my-4 flex items-center gap-3 text-xs text-black/40 dark:text-white/40">
+        <span className="h-px flex-1 bg-[var(--border)]" />
+        or
+        <span className="h-px flex-1 bg-[var(--border)]" />
+      </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <input
           placeholder="Display name"
@@ -65,10 +72,6 @@ export default function SignupPage() {
         <Link href="/login" className="text-[var(--accent)] hover:underline">
           Log in
         </Link>
-      </p>
-      <p className="mt-2 text-xs text-black/50 dark:text-white/50">
-        Sign in with Apple/Google can be wired up later — Apple requires it if any
-        third-party sign-in is offered, so add it alongside Google, not instead of email.
       </p>
     </div>
   );

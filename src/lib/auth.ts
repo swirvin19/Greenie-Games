@@ -66,3 +66,68 @@ export async function requireUserId(): Promise<string> {
 }
 
 export class AuthError extends Error {}
+
+const OAUTH_STATE_COOKIE = "greeni_oauth_state";
+
+/** CSRF guard for the OAuth redirect round-trip: a random value stashed in a cookie and echoed back as `state`. */
+export async function setOAuthStateCookie(state: string) {
+  const store = await cookies();
+  store.set(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 10,
+  });
+}
+
+export async function consumeOAuthStateCookie(): Promise<string | null> {
+  const store = await cookies();
+  const value = store.get(OAUTH_STATE_COOKIE)?.value ?? null;
+  store.delete(OAUTH_STATE_COOKIE);
+  return value;
+}
+
+/**
+ * Finds or creates the User for an OAuth identity and starts their session.
+ * Matches on (authProvider, authProviderId) first — the only thing Apple
+ * guarantees on a returning sign-in — and only falls back to matching an
+ * existing account by email when the provider vouches the email is
+ * verified, so an unverified email can't be used to take over an account.
+ */
+export async function loginOrCreateOAuthUser(opts: {
+  provider: "google" | "apple";
+  providerId: string;
+  email?: string | null;
+  emailVerified?: boolean;
+  displayName?: string | null;
+}) {
+  let user = await prisma.user.findFirst({
+    where: { authProvider: opts.provider, authProviderId: opts.providerId },
+  });
+
+  if (!user && opts.email && opts.emailVerified) {
+    const existing = await prisma.user.findUnique({ where: { email: opts.email } });
+    if (existing) {
+      user = await prisma.user.update({
+        where: { id: existing.id },
+        data: { authProvider: opts.provider, authProviderId: opts.providerId },
+      });
+    }
+  }
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: opts.email ?? undefined,
+        displayName: opts.displayName || opts.email?.split("@")[0] || "Golfer",
+        authProvider: opts.provider,
+        authProviderId: opts.providerId,
+        progress: { create: {} },
+      },
+    });
+  }
+
+  await setSessionCookie(user.id);
+  return user;
+}
