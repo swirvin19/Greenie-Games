@@ -20,7 +20,7 @@ import type {
 } from "./types";
 
 // ============================================================
-// Greeni golf side-game scoring engine
+// Greeni Games golf side-game scoring engine
 //
 // Pure functions only — no I/O, no Prisma. Takes a round's
 // `gamesConfig` + `scoreData` (both plain JSON, matching the

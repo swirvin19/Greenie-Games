@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Greeni — golf rounds, games & friends",
+  title: "Greeni Games — golf rounds, games & friends",
   description: "Track rounds, run side games, trade cosmetics, and chat with your golf crew.",
 };
 

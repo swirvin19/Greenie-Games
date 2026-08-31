@@ -65,6 +65,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await prisma.round.update({
       where: { id },
       data: { scoreData: scoreData as unknown as object },
+      include: { owner: true, course: true, teeBox: true, followers: true, wagers: true, thread: true },
     });
 
     const results = computeRoundResults(gamesConfig, scoreData);

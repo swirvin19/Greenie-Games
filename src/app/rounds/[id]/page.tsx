@@ -1,12 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useRequireAuth } from "@/components/require-auth";
 import { apiFetch, ApiError } from "@/lib/client-api";
 import type { GamesConfig, HoleEntry, RoundResults } from "@/lib/games/types";
 import { gameMeta } from "@/lib/games/catalog";
 import { ThreadPanel } from "@/components/thread-panel";
+
+function MainGameMark() {
+  return <Image src="/greeni-mascot.png" alt="" width={20} height={16} className="shrink-0" />;
+}
 
 interface RoundDetail {
   id: string;
@@ -144,7 +149,7 @@ export default function RoundPage() {
 
       <section className="card border-[var(--accent)]/30 p-4">
         <div className="mb-3 flex items-center gap-2">
-          <span className="text-[var(--accent)]">●</span>
+          <MainGameMark />
           <h2 className="font-semibold">Stroke Play</h2>
         </div>
         <ul className="flex flex-col gap-1 text-sm">
@@ -170,15 +175,17 @@ export default function RoundPage() {
       {mainGameResults.map((g) => (
         <section key={g.game} className="card border-[var(--accent)]/30 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <span className="text-[var(--accent)]">●</span>
+            <MainGameMark />
             <h2 className="font-semibold">{g.label}</h2>
           </div>
           <ul className="flex flex-col gap-1 text-sm">
             {g.standings
               .slice()
               .sort((a, b) => b.value - a.value)
-              .map((s) => (
-                <li key={s.playerId} className="flex justify-between">
+              .map((s, i) => (
+                // Nassau (and similar) emit one row per segment per player,
+                // so playerId alone isn't a unique key here.
+                <li key={`${s.playerId}-${i}`} className="flex justify-between">
                   <span>{nameFor(s.playerId)}</span>
                   <span>
                     {s.value}
@@ -206,8 +213,8 @@ export default function RoundPage() {
                   {g.standings
                     .slice()
                     .sort((a, b) => b.value - a.value)
-                    .map((s) => (
-                      <li key={s.playerId} className="flex justify-between">
+                    .map((s, i) => (
+                      <li key={`${s.playerId}-${i}`} className="flex justify-between">
                         <span>{nameFor(s.playerId)}</span>
                         <span>
                           {s.value}

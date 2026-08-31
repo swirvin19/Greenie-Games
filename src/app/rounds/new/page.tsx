@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/components/require-auth";
 import { apiFetch, ApiError } from "@/lib/client-api";
 import type { GameType } from "@/lib/games/types";
 import { MAIN_GAMES, SIDE_GAMES, STROKE_PLAY_HINT, STROKE_PLAY_LABEL } from "@/lib/games/catalog";
+
+function MainGameMark() {
+  return <Image src="/greeni-mascot.png" alt="" width={20} height={16} className="mt-0.5 shrink-0" />;
+}
 
 interface Friend {
   friendshipId: string;
@@ -238,7 +243,7 @@ export default function NewRoundPage() {
         </div>
 
         <div className="flex items-start gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10 p-3 text-sm">
-          <span className="mt-0.5 text-[var(--accent)]">●</span>
+          <MainGameMark />
           <span>
             <span className="font-medium">{STROKE_PLAY_LABEL}</span>
             <br />

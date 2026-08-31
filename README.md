@@ -1,4 +1,4 @@
-# Greeni
+# Greeni Games
 
 A golf app: real accounts, cosmetic inventory + trading, seasonal passes with
 free/premium reward tracks, a friend graph, live round tracking with 11 side

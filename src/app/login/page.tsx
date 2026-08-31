@@ -44,6 +44,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-sm py-12">
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
         <Image src="/greeni-mascot.png" alt="" width={72} height={58} />
+        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">Greeni Games</p>
         <h1 className="text-2xl font-bold">
           Welcome <span className="glow-text">back</span>
         </h1>

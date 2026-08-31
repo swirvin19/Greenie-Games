@@ -37,7 +37,7 @@ export default function SignupPage() {
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
         <Image src="/greeni-mascot.png" alt="" width={72} height={58} />
         <h1 className="text-2xl font-bold">
-          Join <span className="glow-text">Greeni</span>
+          Join <span className="glow-text">Greeni Games</span>
         </h1>
       </div>
       <OAuthButtons />

@@ -39,7 +39,7 @@ export function NavBar() {
           onClick={() => setOpen(false)}
         >
           <Image src="/greeni-mascot.png" alt="" width={32} height={26} className="shrink-0" />
-          <span className="glow-text">Greeni</span>
+          <span className="glow-text">Greeni Games</span>
         </Link>
 
         <nav className="hidden flex-1 flex-wrap gap-1 text-sm sm:flex">
