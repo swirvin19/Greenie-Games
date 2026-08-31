@@ -18,11 +18,14 @@ export async function POST(req: Request) {
     const valid = await verifyPassword(body.password, user.passwordHash);
     if (!valid) throw new HttpError(401, "Invalid email or password");
 
-    await setSessionCookie(user.id);
+    const token = await setSessionCookie(user.id);
     return NextResponse.json({
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      // For API clients without a cookie jar (the Expo app) — the web app
+      // ignores this and relies on the httpOnly cookie set above instead.
+      token,
     });
   } catch (err) {
     return handleApiError(err);

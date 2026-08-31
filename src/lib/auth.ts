@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
@@ -24,7 +24,8 @@ export async function createSessionToken(userId: string) {
     .sign(secret);
 }
 
-export async function setSessionCookie(userId: string) {
+/** Sets the web session cookie and returns the same token for API clients (the Expo app) to store themselves. */
+export async function setSessionCookie(userId: string): Promise<string> {
   const token = await createSessionToken(userId);
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
@@ -34,6 +35,7 @@ export async function setSessionCookie(userId: string) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
+  return token;
 }
 
 export async function clearSessionCookie() {
@@ -41,9 +43,25 @@ export async function clearSessionCookie() {
   store.delete(SESSION_COOKIE);
 }
 
+/**
+ * Sessions come from two places: an httpOnly cookie (the web app) or an
+ * `Authorization: Bearer <token>` header (the Expo app — a native client
+ * has no shared browser cookie jar, so it stores the token itself, e.g. in
+ * expo-secure-store, and sends it back on every request instead). Both
+ * carry the same JWT produced by createSessionToken; the cookie is tried
+ * first since it's the common case, the header is the mobile fallback.
+ */
 export async function getSessionUserId(): Promise<string | null> {
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
+  const cookieToken = store.get(SESSION_COOKIE)?.value;
+
+  let token = cookieToken;
+  if (!token) {
+    const headerStore = await headers();
+    const auth = headerStore.get("authorization");
+    if (auth?.startsWith("Bearer ")) token = auth.slice("Bearer ".length);
+  }
+
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret);

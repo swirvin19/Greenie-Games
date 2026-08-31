@@ -27,11 +27,12 @@ export async function POST(req: Request) {
       },
     });
 
-    await setSessionCookie(user.id);
+    const token = await setSessionCookie(user.id);
     return NextResponse.json({
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      token,
     });
   } catch (err) {
     return handleApiError(err);
